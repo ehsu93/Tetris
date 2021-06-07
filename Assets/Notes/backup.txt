@@ -1,0 +1,225 @@
+
+
+using System;
+using System.Collections;
+using UnityEngine;
+
+namespace Tetris {
+    public class Board: MonoBehaviour {
+        public int width = Constants.WIDTH;
+        public int height = Constants.HEIGHT;  
+        Transform[,] grid;
+        
+        public Board(int width = -1, int height = -1) {
+            this.width = width <= 0 ? Constants.WIDTH : width;
+            this.height = height <= 0 ? Constants.HEIGHT : height;
+            this.grid = new Transform[width, height];
+        }
+
+        public bool InsideBoard(Vector2 pos) {
+            return  (int) pos.x >= 0 &&
+                    (int) pos.x < this.width &&
+                    (int) pos.y >= 0;
+        }
+
+        Transform getAtPos(Vector2 vector) {
+            return this.grid[(int) vector.x, (int) vector.y];
+        }
+
+        public bool IsValidPosition(Piece piece) {
+            foreach(Transform child in piece.transform) {
+                Vector2 v = roundVec2(child.position);
+
+                if(!InsideBoard(v)) 
+                    return false;
+
+                Transform t = getAtPos(v);
+                if (t != null && t.parent != piece.transform)
+                    return false;
+            }
+            return true;
+        }
+
+        Vector2 roundVec2(Vector2 v)
+        {
+            return new Vector2(Mathf.Round(v.x),
+                            Mathf.Round(v.y));
+        }
+
+        void shiftRow(int y) {
+            for (int x = 0; x < this.width; x++) {
+                if (this.grid[x, y] != null) {
+                    this.grid[x, y-1] = grid[x,y];
+                    grid[x, y] = null;
+
+                    grid[x, y-1].position += new Vector3(0, -1, 0);
+                }
+            }
+        }
+
+        public void SavePosition(Piece piece) {
+            for (int y = 0; y < this.height; y++) {
+                for (int x = 0; x < this.width; x++) {
+                    if(this.grid[x, y] != null) {
+                        if(this.grid[x, y].parent == piece.transform)
+                            Grid.grid[x, y] = null;
+                    }
+                }
+            }
+            foreach (Transform child in piece.transform) {
+                try {
+                    Vector2 v = roundVec2(child.position);
+                    this.grid[(int) v.x, (int) v.y] = child;
+                }
+                catch {}
+            }
+        }
+
+        void shiftRowsAbove(int row) {
+            for (int y = row; y < this.height; y++) {
+                shiftRow(y);
+            }
+        }
+
+        public void DeleteRow(int y) {
+            for (int x = 0; x < this.width; x++) {
+                try {
+                    Destroy(this.grid[x, y].gameObject);
+                }
+                catch {
+                    Console.WriteLine(String.Format("Destroy failed at {0}, {1}", x, y));
+                }
+                this.grid[x, y] = null;
+            }
+            shiftRowsAbove(y);
+        }
+
+        public void DeleteAll() {
+            for(int y = 0; y < this.height; y++) {
+                DeleteRow(y);
+            }
+        }
+
+
+    }
+
+}
+
+using System;
+using System.Collections;
+using UnityEngine;
+
+namespace Tetris {
+    public class Board: MonoBehaviour {
+        public static int width = Constants.WIDTH;
+        public static int height = Constants.HEIGHT;  
+        static Transform[,] grid = new Transform[width, height];
+
+        public static bool InsideBoard(Vector2 pos) {
+            return  (int) pos.x >= 0 &&
+                    (int) pos.x < width &&
+                    (int) pos.y >= 0 &&
+                    (int) pos.y < height;
+        }
+
+        static Transform getAtPos(Vector2 vector) {
+            return grid[(int) vector.x, (int) vector.y];
+        }
+
+        public static bool IsValidPosition(Transform transform) {
+            foreach(Transform child in transform) {
+                Vector2 v = roundVec2(child.position);
+
+                if(!InsideBoard(v)) 
+                    return false;
+
+                Transform t = getAtPos(v);
+                if (t != null && t.parent != transform)
+                    return false;
+            }
+            return true;
+        }
+
+        static Vector2 roundVec2(Vector2 v)
+        {
+            return new Vector2(Mathf.Round(v.x),
+                            Mathf.Round(v.y));
+        }
+
+        static void shiftRow(int y) {
+            for (int x = 0; x < width; x++) {
+                if (grid[x, y] != null) {
+                    grid[x, y-1] = grid[x,y];
+                    grid[x, y] = null;
+
+                    grid[x, y-1].position += new Vector3(0, -1, 0);
+                }
+            }
+        }
+
+        public static void SavePosition(Transform transform) {
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    if(grid[x, y] != null) {
+                        if(grid[x, y].parent == transform)
+                            Grid.grid[x, y] = null;
+                    }
+                }
+            }
+            foreach (Transform child in transform) {
+                try {
+                    Vector2 v = roundVec2(child.position);
+                    grid[(int) v.x, (int) v.y] = child;
+                }
+                catch {}
+            }
+        }
+
+        static void shiftRowsAbove(int row) {
+            for (int y = row; y < height; y++) {
+                shiftRow(y);
+            }
+        }
+
+        static bool rowFull(int y) {
+            for (int x = 0; x < width; x++) {
+                if(grid[x, y] == null) return false;
+            }
+            return true;
+        }
+
+        public static int deleteFullRows() {
+            int rows = 0;
+            for(int y = 0; y < height; y++) {
+                if (rowFull(y))
+                {
+                    DeleteRow(y);
+                    rows++;
+                }
+            }
+            return rows;
+        }
+
+        public static void DeleteRow(int y) {
+            for (int x = 0; x < width; x++) {
+                try {
+                    Destroy(grid[x, y].gameObject);
+                }
+                catch {
+                    Console.WriteLine(String.Format("Destroy failed at {0}, {1}", x, y));
+                }
+                grid[x, y] = null;
+            }
+            shiftRowsAbove(y);
+        }
+
+        public static void DeleteAll() {
+            for(int y = 0; y < height; y++) {
+                DeleteRow(y);
+            }
+        }
+
+
+    }
+
+}

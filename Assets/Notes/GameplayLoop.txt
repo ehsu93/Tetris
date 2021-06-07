@@ -1,0 +1,6 @@
+Piece is falling
+Piece lands on board
+
+GameManager stores game state info and static pieces, controls, general game state
+Piece stores location, collision info, movement. Asks GameManager if movement is valid
+PieceSpawner creates pieces
